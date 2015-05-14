@@ -3,8 +3,8 @@
   Plugin Name: Citing Option
   Plugin URI: http://dejanseo.com.au
   Description: Citing Option
-  Author: Ivan M
-  Version: 0.1.2
+  Author: Dejan SEO
+  Version: 1.0
   Author URI: http://dejanseo.com.au
  */
 /* Fire our meta box setup function on the post editor screen. */
@@ -22,6 +22,20 @@ function cite_post_meta_boxes_setup() {
     add_action( 'save_post', 'cite_save_post_meta', 10, 2 );
 }
 
+function dcr_get_credits(){
+    $credits_url = "http://linkserver.dejanseo.org/api.php?consumer=CiteReferences";
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_HEADER, 0);
+    curl_setopt($ch, CURLOPT_VERBOSE, 0);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+    curl_setopt($ch, CURLOPT_FAILONERROR, 0);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($ch, CURLOPT_URL, $credits_url);
+    $returned = curl_exec($ch);
+
+    return json_decode($returned);
+}
 
 /* Create one or more meta boxes to be displayed on the post editor screen. */
 function cite_add_post_boxes() {
@@ -37,7 +51,8 @@ function cite_add_post_boxes() {
 }
 
 /* Display the post meta box. */
-function cite_meta_box( $object, $box ) { ?>
+function cite_meta_box( $object, $box ) { 
+    ?>
 
     <?php wp_nonce_field( basename( __FILE__ ), 'cite_option_nonce' ); ?>
 
@@ -46,30 +61,41 @@ function cite_meta_box( $object, $box ) { ?>
         <br />
 
                
-            <?
+            <?php
             
             if(esc_attr( get_post_meta( $object->ID, 'cite_option', true ) )=="yes"){
                 ?>
                    <input type="radio" name="cite-option" id="cite-option" value="yes" checked> Yes |
                    <input type="radio" name="cite-option" id="cite-option" value="no"> No
 
-                <?
+            <?php
             }
             else if(esc_attr( get_post_meta( $object->ID, 'cite_option', true ) )=="no") {
                 ?>
                     <input type="radio" name="cite-option" id="cite-option" value="yes">Yes</option>
                     <input type="radio" name="cite-option" id="cite-option" value="no" checked>No</option>
-                <?
+                <?php
             }
             else{
                 ?>
                     <input type="radio" name="cite-option" id="cite-option" value="yes" checked>Yes</option>
                     <input type="radio" name="cite-option" id="cite-option" value="no">No</option>
-                <?
+                <?php
             }
             ?>
     </p>
-<?php }
+    <hr>
+
+<?php 
+    // show credits
+    $credits = dcr_get_credits();
+    if(isset($credits->href) && isset($credits->anchor) && !isset($credits->banner)){
+        echo '<div style="text-align: right;"><a href="'.$credits->href.'" target="_blank">'.$credits->anchor.'</a></div>';
+    } else if(isset($credits->href) && isset($credits->anchor) && isset($credits->banner)){
+         echo '<a href="'.$credits->href.'" target="_blank"><img src="'.$credits->banner.'" alt="'.$credits->anchor.'"></a>';
+    }
+
+}
 
 
 /* Save the meta box's post metadata. */
